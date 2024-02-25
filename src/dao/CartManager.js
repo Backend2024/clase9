@@ -1,75 +1,72 @@
-const Cart = require('../models/Cart');
+const fs = require('fs').promises;
 
 class CartManager {
-    constructor() {
-        // Inicializar variables si es necesario
+    constructor(filePath) {
+        this.filePath = filePath;
+        this.carts = [];
+        this.init();
+    }
+
+    async init() {
+        try {
+            const data = await fs.readFile(this.filePath, 'utf8');
+            this.carts = JSON.parse(data);
+        } catch (error) {
+            this.carts = [];
+        }
+    }
+
+    async saveCarts() {
+        try {
+            await fs.writeFile(this.filePath, JSON.stringify(this.carts, null, 2), 'utf8');
+        } catch (error) {
+            throw new Error("Error al escribir en el archivo de carritos");
+        }
     }
 
     async createCart() {
-        // Método para crear un nuevo carrito
-        try {
-            const newCart = new Cart({ items: [] });
-            await newCart.save();
-            return newCart;
-        } catch (error) {
-            throw new Error("Error al crear carrito: " + error.message);
-        }
+        const newCart = {
+            id: this.carts.length + 1, // Esto solo es una simplificación. Deberías generar un ID único y seguro.
+            items: []
+        };
+        this.carts.push(newCart);
+        await this.saveCarts();
+        return newCart;
     }
 
     async getCartById(cartId) {
-        // Método para obtener un carrito por su ID con paginación en los items
-        try {
-            const cart = await Cart.findById(cartId).populate('items.productId');
-            return cart;
-        } catch (error) {
-            throw new Error("Carrito no encontrado: " + error.message);
+        const cart = this.carts.find(cart => cart.id === cartId);
+        if (!cart) {
+            throw new Error("Carrito no encontrado");
         }
+        return cart;
     }
 
     async addProductToCart(cartId, productId, quantity) {
-        // Método para añadir un producto al carrito
-        try {
-            const cart = await this.getCartById(cartId);
-            const itemIndex = cart.items.findIndex(item => item.productId.equals(productId));
-
-            if (itemIndex > -1) {
-                cart.items[itemIndex].quantity += quantity;
-            } else {
-                cart.items.push({ productId, quantity });
-            }
-
-            await cart.save();
-            return cart;
-        } catch (error) {
-            throw new Error("Error al añadir producto al carrito: " + error.message);
+        const cart = await this.getCartById(cartId);
+        const productIndex = cart.items.findIndex(item => item.productId === productId);
+        
+        if (productIndex !== -1) {
+            cart.items[productIndex].quantity += quantity;
+        } else {
+            cart.items.push({ productId, quantity });
         }
+
+        await this.saveCarts();
+        return cart;
     }
 
     async removeProductFromCart(cartId, productId) {
-        // Método para eliminar un producto del carrito
-        try {
-            const cart = await this.getCartById(cartId);
-            cart.items = cart.items.filter(item => !item.productId.equals(productId));
-            await cart.save();
-        } catch (error) {
-            throw new Error("Error al eliminar producto del carrito: " + error.message);
+        const cart = await this.getCartById(cartId);
+        const productIndex = cart.items.findIndex(item => item.productId === productId);
+        
+        if (productIndex === -1) {
+            throw new Error("Producto no encontrado en el carrito");
         }
-    }
 
-    // Método para obtener todos los carritos con paginación
-    async getAllCarts(page, limit) {
-        try {
-            const options = {
-                page: page || 1,
-                limit: limit || 10,
-                populate: 'items.productId'
-            };
-            const result = await Cart.paginate({}, options);
-            return result;
-        } catch (error) {
-            throw new Error("Error al obtener carritos: " + error.message);
-        }
+        cart.items.splice(productIndex, 1);
+        await this.saveCarts();
     }
 }
 
-module.exports = new CartManager();
+module.exports = CartManager;

@@ -1,74 +1,89 @@
-const Product = require('../models/Product');
+const fs = require('fs').promises;
 
 class ProductManager {
-    // Método para añadir productos
+    constructor(filePath) {
+        this.filePath = filePath;
+        this.init();
+    }
+
+    async init() {
+        try {
+            const data = await fs.readFile(this.filePath, 'utf8');
+            this.products = JSON.parse(data);
+        } catch (error) {
+            this.products = [];
+        }
+        this.nextId = this.products.length ? Math.max(...this.products.map(p => p.id)) + 1 : 1;
+    }
+
+    async readFromFile() {
+        try {
+            const data = await fs.readFile(this.filePath, 'utf8');
+            return JSON.parse(data);
+        } catch (error) {
+            return [];
+        }
+    }
+
+    async writeToFile() {
+        try {
+            await fs.writeFile(this.filePath, JSON.stringify(this.products, null, 2), 'utf8');
+        } catch (error) {
+            throw new Error("Error al escribir en el archivo");
+        }
+    }
+
     async addProduct(title, description, price, thumbnail, code, stock) {
-        try {
-            const product = new Product({ title, description, price, thumbnail, code, stock });
-            await product.save();
-            return product;
-        } catch (error) {
-            throw new Error("Error al añadir producto: " + error.message);
+        await this.readFromFile();
+        if (this.products.some(product => product.code === code)) {
+            throw new Error("El código del producto ya existe");
         }
+        const newProduct = {
+            id: this.nextId++,
+            title,
+            description,
+            price,
+            thumbnail,
+            code,
+            stock
+        };
+        this.products.push(newProduct);
+        await this.writeToFile();
     }
 
-    // Método para obtener productos con paginación, filtrado y ordenamiento
-    async getProducts(filters = {}, page = 1, limit = 10, sort = 'title', order = 'asc') {
-        try {
-            const queryFilters = this.buildQueryFilters(filters);
-            const options = {
-                page,
-                limit,
-                sort: { [sort]: order === 'asc' ? 1 : -1 }
-            };
-            const result = await Product.paginate(queryFilters, options);
-            return result;
-        } catch (error) {
-            throw new Error("Error al obtener productos: " + error.message);
-        }
+    async getProducts() {
+        await this.readFromFile();
+        return this.products;
     }
 
-    // Método para obtener un producto por su ID
     async getProductById(id) {
-        try {
-            const product = await Product.findById(id);
-            return product;
-        } catch (error) {
-            throw new Error("Producto no encontrado: " + error.message);
+        await this.readFromFile();
+        const product = this.products.find(product => product.id === id);
+        if (!product) {
+            throw new Error("Producto no encontrado");
         }
+        return product;
     }
 
-    // Método para actualizar un producto por su ID
     async updateProduct(id, updatedProduct) {
-        try {
-            const product = await Product.findByIdAndUpdate(id, updatedProduct, { new: true });
-            return product;
-        } catch (error) {
-            throw new Error("Error al actualizar producto: " + error.message);
+        await this.readFromFile();
+        const index = this.products.findIndex(product => product.id === id);
+        if (index === -1) {
+            throw new Error("Producto no encontrado");
         }
+        this.products[index] = {...this.products[index], ...updatedProduct};
+        await this.writeToFile();
     }
 
-    // Método para eliminar un producto por su ID
     async deleteProduct(id) {
-        try {
-            await Product.findByIdAndDelete(id);
-        } catch (error) {
-            throw new Error("Error al eliminar producto: " + error.message);
+        await this.readFromFile();
+        const index = this.products.findIndex(product => product.id === id);
+        if (index === -1) {
+            throw new Error("Producto no encontrado");
         }
-    }
-
-    // Método auxiliar para construir los filtros de la consulta a partir de los parámetros de entrada
-    buildQueryFilters(filters) {
-        let queryFilters = {};
-        for (const key in filters) {
-            if (filters.hasOwnProperty(key)) {
-                // Faltaria añadir la lógica de validación para cada filtro
-                // Por ejemplo, el precio que realmente sea un número
-                queryFilters[key] = filters[key];
-            }
-        }
-        return queryFilters;
+        this.products.splice(index, 1);
+        await this.writeToFile();
     }
 }
 
-module.exports = new ProductManager();
+module.exports = ProductManager;
