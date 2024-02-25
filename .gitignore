@@ -1,0 +1,10 @@
+# Dependencias de Node
+node_modules/
+
+# Archivos de entorno
+.env
+
+# Directorios de caché
+
+
+# Otros archivos que pueden contener información sensible o no necesaria

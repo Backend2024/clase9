@@ -1,0 +1,46 @@
+{{!-- Extender el layout principal --}}
+{{#extend "main"}}
+
+{{#content "body"}}
+<h1>Chat en Vivo</h1>
+
+<div id="chat-window">
+    <ul id="messages-list">
+        {{!-- Los mensajes se cargarán aquí dinámicamente --}}
+    </ul>
+</div>
+
+<form id="chat-form">
+    <input type="email" id="user-email" placeholder="Tu correo electrónico" required>
+    <textarea id="message-text" placeholder="Escribe tu mensaje aquí" required></textarea>
+    <button type="submit">Enviar Mensaje</button>
+</form>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    // Enviar un nuevo mensaje
+    document.getElementById('chat-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = {
+            user: document.getElementById('user-email').value,
+            message: document.getElementById('message-text').value
+        };
+        socket.emit('newMessage', message);
+        document.getElementById('message-text').value = ''; // Limpia el área del mensaje
+    });
+
+    // Escuchar nuevos mensajes
+    socket.on('messageListUpdated', function(messages) {
+        const messagesList = document.getElementById('messages-list');
+        messagesList.innerHTML = ''; // Limpia la lista actual
+        messages.forEach(msg => {
+            const date = new Date(msg.timestamp);
+            messagesList.innerHTML += `<li><strong>${msg.user}</strong> [${date.toLocaleTimeString()}]: ${msg.message}</li>`;
+        });
+    });
+</script>
+{{/content}}
+
+{{/extend}}

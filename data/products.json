@@ -1,0 +1,54 @@
+[
+  {
+    "id": 3,
+    "title": "Teclado Mecánico",
+    "description": "Teclado mecánico con retroiluminación",
+    "price": 75,
+    "thumbnail": "urlImagenTeclado",
+    "code": "TEC003",
+    "stock": 35
+  },
+  {
+    "id": 4,
+    "title": "Monitor 24 Pulgadas",
+    "description": "Monitor Full HD, 60Hz",
+    "price": 200,
+    "thumbnail": "urlImagenMonitor",
+    "code": "MON004",
+    "stock": 15
+  },
+  {
+    "id": 5,
+    "title": "Auriculares Bluetooth",
+    "description": "Auriculares con cancelación de ruido",
+    "price": 100,
+    "thumbnail": "urlImagenAuriculares",
+    "code": "AUR005",
+    "stock": 40
+  },
+  {
+    "id": 6,
+    "title": "Cámara Web HD",
+    "description": "Cámara web Full HD con micrófono",
+    "price": 50,
+    "thumbnail": "urlImagenCamara",
+    "code": "CAM006",
+    "stock": 25
+  },
+  {
+    "id": 7,
+    "title": "Micrófono USB",
+    "description": "Micrófono de estudio con conexión USB",
+    "price": 85,
+    "thumbnail": "urlImagenMicrofono",
+    "code": "MIC007",
+    "stock": 30
+  },
+  {
+    "id": 12,
+    "title": {
+      "title": "\"silla\"",
+      "price": "50"
+    }
+  }
+]

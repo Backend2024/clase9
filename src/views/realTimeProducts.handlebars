@@ -1,0 +1,77 @@
+<h1>Productos en Tiempo Real</h1>
+<ul id="productList">
+    {{#each products}}
+    <li id="product_{{this.id}}">
+        {{this.title}} - ${{this.price}}
+        <button onclick="deleteProduct({{this.id}})">Eliminar</button>
+        <button onclick="showUpdateForm({{this.id}}, '{{this.title}}', {{this.price}})">Actualizar</button>
+    </li>
+    {{/each}}
+</ul>
+
+<form id="newProductForm">
+    <input type="text" id="title" placeholder="Nombre del producto" required>
+    <input type="number" id="price" placeholder="Precio" required>
+    <!-- Añade aquí más campos según necesites -->
+    <button type="submit">Agregar Producto</button>
+</form>
+
+<form id="updateProductForm" style="display:none;">
+    <input type="hidden" id="updateId">
+    <input type="text" id="updateTitle" placeholder="Nombre del producto" required>
+    <input type="number" id="updatePrice" placeholder="Precio" required>
+    <!-- Añade aquí más campos para la actualización según necesites -->
+    <button type="submit">Actualizar Producto</button>
+</form>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    socket.on('productListUpdated', function(products) {
+        const productList = document.getElementById('productList');
+        productList.innerHTML = ''; // Limpia la lista actual
+        products.forEach(product => {
+            productList.innerHTML += `<li id="product_${product.id}">${product.title} - $${product.price}
+                                       <button onclick="deleteProduct(${product.id})">Eliminar</button>
+                                       <button onclick="showUpdateForm(${product.id}, '${product.title}', ${product.price})">Actualizar</button>
+                                       </li>`;
+        });
+    });
+
+    document.getElementById('newProductForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const newProduct = {
+            title: document.getElementById('title').value,
+            price: document.getElementById('price').value,
+            // Asegúrate de capturar y enviar todos los campos necesarios
+        };
+        socket.emit('newProduct', newProduct);
+        // Limpia el formulario después de enviar
+        this.reset();
+    });
+
+    document.getElementById('updateProductForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const updatedProduct = {
+            id: document.getElementById('updateId').value,
+            title: document.getElementById('updateTitle').value,
+            price: document.getElementById('updatePrice').value,
+            // Asegúrate de capturar y enviar todos los campos necesarios
+        };
+        socket.emit('updateProduct', updatedProduct);
+        // Oculta el formulario después de enviar
+        this.style.display = 'none';
+    });
+
+    function deleteProduct(productId) {
+        socket.emit('deleteProduct', productId);
+    }
+
+    function showUpdateForm(id, title, price) {
+        document.getElementById('updateId').value = id;
+        document.getElementById('updateTitle').value = title;
+        document.getElementById('updatePrice').value = price;
+        document.getElementById('updateProductForm').style.display = 'block';
+    }
+</script>
