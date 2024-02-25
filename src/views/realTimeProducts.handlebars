@@ -1,18 +1,32 @@
 <h1>Productos en Tiempo Real</h1>
 <ul id="productList">
-    {{#each products}}
-    <li id="product_{{this.id}}">
+    {{#each products.docs}}
+    <li id="product_{{this._id}}">
         {{this.title}} - ${{this.price}}
-        <button onclick="deleteProduct({{this.id}})">Eliminar</button>
-        <button onclick="showUpdateForm({{this.id}}, '{{this.title}}', {{this.price}})">Actualizar</button>
+        <button onclick="deleteProduct('{{this._id}}')">Eliminar</button>
+        <button onclick="showUpdateForm('{{this._id}}', '{{this.title}}', '{{this.price}}')">Actualizar</button>
     </li>
     {{/each}}
 </ul>
 
+{{!-- Paginación --}}
+{{#if products.totalPages}}
+    <div id="pagination">
+        {{#if products.hasPrevPage}}
+            <a href="?page={{products.prevPage}}">&laquo; Anterior</a>
+        {{/if}}
+        {{#each products.pages}}
+            <a href="?page={{this}}" class="{{#if this.active}}active{{/if}}">{{this}}</a>
+        {{/each}}
+        {{#if products.hasNextPage}}
+            <a href="?page={{products.nextPage}}">Siguiente &raquo;</a>
+        {{/if}}
+    </div>
+{{/if}}
+
 <form id="newProductForm">
     <input type="text" id="title" placeholder="Nombre del producto" required>
     <input type="number" id="price" placeholder="Precio" required>
-    <!-- Añade aquí más campos según necesites -->
     <button type="submit">Agregar Producto</button>
 </form>
 
@@ -20,7 +34,6 @@
     <input type="hidden" id="updateId">
     <input type="text" id="updateTitle" placeholder="Nombre del producto" required>
     <input type="number" id="updatePrice" placeholder="Precio" required>
-    <!-- Añade aquí más campos para la actualización según necesites -->
     <button type="submit">Actualizar Producto</button>
 </form>
 
@@ -30,38 +43,14 @@
 
     socket.on('productListUpdated', function(products) {
         const productList = document.getElementById('productList');
-        productList.innerHTML = ''; // Limpia la lista actual
-        products.forEach(product => {
-            productList.innerHTML += `<li id="product_${product.id}">${product.title} - $${product.price}
-                                       <button onclick="deleteProduct(${product.id})">Eliminar</button>
-                                       <button onclick="showUpdateForm(${product.id}, '${product.title}', ${product.price})">Actualizar</button>
+        productList.innerHTML = '';
+        products.docs.forEach(product => {
+            productList.innerHTML += `<li id="product_${product._id}">${product.title} - $${product.price}
+                                       <button onclick="deleteProduct('${product._id}')">Eliminar</button>
+                                       <button onclick="showUpdateForm('${product._id}', '${product.title}', '${product.price}')">Actualizar</button>
                                        </li>`;
         });
-    });
-
-    document.getElementById('newProductForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const newProduct = {
-            title: document.getElementById('title').value,
-            price: document.getElementById('price').value,
-            // Asegúrate de capturar y enviar todos los campos necesarios
-        };
-        socket.emit('newProduct', newProduct);
-        // Limpia el formulario después de enviar
-        this.reset();
-    });
-
-    document.getElementById('updateProductForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const updatedProduct = {
-            id: document.getElementById('updateId').value,
-            title: document.getElementById('updateTitle').value,
-            price: document.getElementById('updatePrice').value,
-            // Asegúrate de capturar y enviar todos los campos necesarios
-        };
-        socket.emit('updateProduct', updatedProduct);
-        // Oculta el formulario después de enviar
-        this.style.display = 'none';
+        updatePagination(products);
     });
 
     function deleteProduct(productId) {
@@ -73,5 +62,19 @@
         document.getElementById('updateTitle').value = title;
         document.getElementById('updatePrice').value = price;
         document.getElementById('updateProductForm').style.display = 'block';
+    }
+
+    function updatePagination(paginationData) {
+        const paginationElement = document.getElementById('pagination');
+        paginationElement.innerHTML = '';
+        if (paginationData.hasPrevPage) {
+            paginationElement.innerHTML += `<a href="?page=${paginationData.prevPage}">&laquo; Anterior</a>`;
+        }
+        paginationData.pages.forEach(page => {
+            paginationElement.innerHTML += `<a href="?page=${page}" class="${page === paginationData.page ? 'active' : ''}">${page}</a>`;
+        });
+        if (paginationData.hasNextPage) {
+            paginationElement.innerHTML += `<a href="?page=${paginationData.nextPage}">Siguiente &raquo;</a>`;
+        }
     }
 </script>

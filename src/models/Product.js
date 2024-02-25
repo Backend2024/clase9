@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const mongoosePaginate = require('mongoose-paginate-v2'); // Importar el plugin de paginación
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const productSchema = new mongoose.Schema({
     title: { type: String, required: true },
@@ -10,7 +10,14 @@ const productSchema = new mongoose.Schema({
     stock: { type: Number, required: true }
 });
 
-productSchema.plugin(mongoosePaginate); // Aplicar el plugin al esquema
+// Aplicar el plugin de paginación al esquema
+productSchema.plugin(mongoosePaginate);
+
+// Crear índices para campos utilizados frecuentemente en las consultas
+productSchema.index({ code: 1 }); // Índice para el código del producto
+productSchema.index({ price: 1 }); // Índice para el precio del producto
+productSchema.index({ title: 'text' }); // Índice de texto para el título del producto
 
 const Product = mongoose.model('Product', productSchema);
+
 module.exports = Product;

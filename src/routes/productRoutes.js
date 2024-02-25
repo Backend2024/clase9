@@ -9,11 +9,18 @@ const ProductManagerFS = require('../dao/ProductManager'); // Manager para FileS
 // Decide qué manager usar basándose en la disponibilidad de la base de datos
 const productManager = mongoose.connection.readyState === 1 ? new ProductManagerDB() : new ProductManagerFS('../data/products.json');
 
-// Ruta que devuelve los productos en formato JSON
+// Ruta que devuelve los productos en formato JSON con paginación, filtrado y ordenamiento
 router.get('/', async (req, res) => {
     try {
-        let products = await productManager.getProducts();
-        res.json({ products });
+        const { page, limit, sort, filter } = req.query;
+        const options = {
+            page: parseInt(page, 10) || 1, // Pagina actual
+            limit: parseInt(limit, 10) || 10, // Limite de productos por página
+            sort: sort || 'title', // Ordenamiento de los productos
+            filter: filter || {} // Filtros de búsqueda
+        };
+        const products = await productManager.getProducts(options);
+        res.json(products);
     } catch (err) {
         res.status(500).send(err.message);
     }
@@ -22,8 +29,8 @@ router.get('/', async (req, res) => {
 // Ruta para la visualización y gestión en tiempo real de productos
 router.get('/realtimeproducts', async (req, res) => {
     try {
-        let products = await productManager.getProducts();
-        res.render('realTimeProducts', { products });
+        const products = await productManager.getProducts();
+        res.render('realTimeProducts', { products: products.docs }); // Asegúrese de que la vista maneje el nuevo formato
     } catch (err) {
         res.status(500).send(err.message);
     }
@@ -47,8 +54,8 @@ router.get('/:pid', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const { title, description, price, thumbnail, code, stock } = req.body;
-        await productManager.addProduct(title, description, price, thumbnail, code, stock);
-        res.redirect('/realtimeproducts');
+        const product = await productManager.addProduct(title, description, price, thumbnail, code, stock);
+        res.status(201).json(product); // Cambio para devolver el producto creado en formato JSON
     } catch (err) {
         res.status(500).send(err.message);
     }
@@ -57,8 +64,8 @@ router.post('/', async (req, res) => {
 // Ruta para actualizar un producto específico por ID
 router.put('/:pid', async (req, res) => {
     try {
-        await productManager.updateProduct(req.params.pid, req.body);
-        res.send('Producto actualizado con éxito');
+        const updatedProduct = await productManager.updateProduct(req.params.pid, req.body);
+        res.json(updatedProduct); // Cambio para devolver el producto actualizado en formato JSON
     } catch (err) {
         res.status(500).send(err.message);
     }
@@ -68,7 +75,7 @@ router.put('/:pid', async (req, res) => {
 router.delete('/:pid', async (req, res) => {
     try {
         await productManager.deleteProduct(req.params.pid);
-        res.send('Producto eliminado con éxito');
+        res.status(200).send('Producto eliminado con éxito');
     } catch (err) {
         res.status(500).send(err.message);
     }

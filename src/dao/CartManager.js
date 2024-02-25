@@ -1,7 +1,12 @@
 const Cart = require('../models/Cart');
 
 class CartManager {
+    constructor() {
+        // Inicializar variables si es necesario
+    }
+
     async createCart() {
+        // Método para crear un nuevo carrito
         try {
             const newCart = new Cart({ items: [] });
             await newCart.save();
@@ -12,6 +17,7 @@ class CartManager {
     }
 
     async getCartById(cartId) {
+        // Método para obtener un carrito por su ID con paginación en los items
         try {
             const cart = await Cart.findById(cartId).populate('items.productId');
             return cart;
@@ -21,6 +27,7 @@ class CartManager {
     }
 
     async addProductToCart(cartId, productId, quantity) {
+        // Método para añadir un producto al carrito
         try {
             const cart = await this.getCartById(cartId);
             const itemIndex = cart.items.findIndex(item => item.productId.equals(productId));
@@ -39,12 +46,28 @@ class CartManager {
     }
 
     async removeProductFromCart(cartId, productId) {
+        // Método para eliminar un producto del carrito
         try {
             const cart = await this.getCartById(cartId);
             cart.items = cart.items.filter(item => !item.productId.equals(productId));
             await cart.save();
         } catch (error) {
             throw new Error("Error al eliminar producto del carrito: " + error.message);
+        }
+    }
+
+    // Método para obtener todos los carritos con paginación
+    async getAllCarts(page, limit) {
+        try {
+            const options = {
+                page: page || 1,
+                limit: limit || 10,
+                populate: 'items.productId'
+            };
+            const result = await Cart.paginate({}, options);
+            return result;
+        } catch (error) {
+            throw new Error("Error al obtener carritos: " + error.message);
         }
     }
 }
